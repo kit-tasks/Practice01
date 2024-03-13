@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -38,58 +39,60 @@ namespace OnlineShop
             string login = TextBoxLogin.Text;
             //string password = TextBoxPassword.Text;
             string password = PasswordBoxAuthorization.Password;
-            StringBuilder sb = new StringBuilder();
 
+            try
+            {
+                var user = this.Login(login, password);
+
+                //Вывод информации о выбранном пользователе
+                string message = "Имя: " + user.fullName + " ; Роль: " + App.roles[user.role];
+                MessageBox.Show(message, "Пользователь", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                //Переход на следующее окно
+                Catalog windowCatalog = new Catalog();
+                this.Hide();
+                windowCatalog.ShowDialog();
+                this.Show();
+            } catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+
+        }
+
+        public users Login(string login, string password)
+        {
             //Обработка пустоты
             if (login == "")
             {
-                sb.Append("Логин не введен.\n");
+                throw new Exception("Логин не введен.");
             }
             if (password == "")
             {
-                sb.Append("Пароль не введен.\n");
-            }
-            if (sb.Length > 0)
-            {
-                MessageBox.Show(sb.ToString(), "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
+                throw new Exception("Пароль не введен");
+
             }
 
             //Поиск логина и пароля в БД
-            
+
             List<users> users = App.Entities.users.ToList();
 
             //Авторизация через where
             users user = users.Where(u => u.login.Equals(login)).FirstOrDefault();
-            if (user != null)
+            if (user == null)
             {
-                //Проверка ввода пароля
-                if (user.password.Equals(password))
-                {
-                    App.auth = user;
-
-                    //Вывод информации о выбранном пользователе
-                    sb.Append("Имя: " + user.fullName + " ; Роль: " + App.roles[user.role]);
-                    MessageBox.Show(sb.ToString(), "Пользователь", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                    //Переход на следующее окно
-                    Catalog windowCatalog = new Catalog();
-                    this.Hide();
-                    windowCatalog.ShowDialog();
-                    this.Show();
-
-                    return;
-                }
-                else
-                {
-                    sb.Append("Введен неверный пароль");
-                }
+                throw new Exception("Пользователь не найден.");
             }
-            else
+
+            //Проверка ввода пароля
+            if (!user.password.Equals(password))
             {
-                sb.Append("Пользователь не найден.");
+                throw new Exception("Введен неверный пароль");
             }
-            MessageBox.Show(sb.ToString(), "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+
+            App.auth = user;
+
+            return user;
         }
 
         private void CheckBoxPasswordVisibility_Click(object sender, RoutedEventArgs e)
